@@ -1,6 +1,7 @@
 package envscan
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -8,9 +9,14 @@ import (
 	"strings"
 )
 
+var (
+	ErrNilPointerDeference = errors.New("nil pointer deference error")
+	ErrVMustBePtr          = errors.New("v must be pointer on struct")
+)
+
 func ReadEnvironment(v any, defaultEnvData map[string]string) error {
 	if v == nil {
-		return fmt.Errorf("nil pointer deference error")
+		return ErrNilPointerDeference
 	}
 
 	refVal := reflect.ValueOf(v)
@@ -24,7 +30,7 @@ func ReadEnvironment(v any, defaultEnvData map[string]string) error {
 	}
 
 	if refVal.Kind() != reflect.Struct {
-		return fmt.Errorf("v must be pointer on struct")
+		return ErrVMustBePtr
 	}
 
 	refType := reflect.TypeOf(refVal.Interface())
