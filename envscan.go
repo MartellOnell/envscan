@@ -23,6 +23,8 @@ func ReadEnvironment(v any, defaultEnvData map[string]string) error {
 
 	if refVal.Kind() == reflect.Ptr {
 		refVal = reflect.Indirect(refVal)
+	} else {
+		return ErrVMustBePtr
 	}
 
 	if refVal.Kind() == reflect.Interface {

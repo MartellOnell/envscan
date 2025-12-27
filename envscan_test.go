@@ -55,16 +55,65 @@ func TestReadEnvironmentErrNilPointer(t *testing.T) {
 	}
 }
 
-func TestReadEnvironmentErrNotPtr(t *testing.T) {
+func TestReadEnvironmentErrNotStructPtr(t *testing.T) {
 	type MockConfig struct {
 		MockString      string   `env:"MOCK_STRING"`
 		MockSliceString []string `env:"MOCK_SLICE_STRING"`
 	}
 
-	scanningObj := MockConfig{}
+	firstScanningWrongObj := MockConfig{}
+	secondWrongObj := "wrong"
+	secondScanningWrongObj := &secondWrongObj
 
-	err := ReadEnvironment(scanningObj, make(map[string]string))
+	err := ReadEnvironment(firstScanningWrongObj, make(map[string]string))
 	if !errors.Is(err, ErrVMustBePtr) {
 		t.Errorf("expected %v, got %v", ErrVMustBePtr, err)
+	}
+
+	err = ReadEnvironment(secondScanningWrongObj, make(map[string]string))
+	if !errors.Is(err, ErrVMustBePtr) {
+		t.Errorf("expected %v, got %v", ErrVMustBePtr, err)
+	}
+}
+
+func TestReadEnvironmentStructErrTagMissing(t *testing.T) {
+	type MockConfig struct {
+		MockString      string
+		MockSliceString []string `env:"MOCK_SLICE_STRING"`
+	}
+
+	t.Setenv("MOCK_STRING", "some_value")
+
+	scanningWrongObj := &MockConfig{}
+	expectedErr := errors.New("Struct field \"MockString\" is missing 'env' tag")
+
+	err := ReadEnvironment(scanningWrongObj, make(map[string]string))
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if err.Error() != expectedErr.Error() {
+		t.Errorf("expected %q, got %q", expectedErr.Error(), err.Error())
+	}
+}
+
+func TestReadEnvironmentErrVarNotSet(t *testing.T) {
+	type MockConfig struct {
+		MockString      string   `env:"MOCK_STRING"`
+		MockSliceString []string `env:"MOCK_SLICE_STRING"`
+	}
+
+	t.Setenv("MOCK_SLICE_STRING", "some_value,some_other_value")
+
+	scanningWrongObj := &MockConfig{}
+	expectedErr := errors.New("environment variable MOCK_STRING not set")
+
+	err := ReadEnvironment(scanningWrongObj, make(map[string]string))
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	if err.Error() != expectedErr.Error() {
+		t.Errorf("expected %q, got %q", expectedErr.Error(), err.Error())
 	}
 }
